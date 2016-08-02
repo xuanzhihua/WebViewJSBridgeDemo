@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+        <style>
+            body{
+                background-color:paleturquoise;
+            }
+
+            button{
+                border:0;
+                width: 150px;
+                height: 35px;
+                background-color: orangered;
+                color: white;
+                font-size: 16px;
+                border-radius: 6px;
+            }
+        </style>
+    </head>
+    
+    <body>
+        <h2>JS调用OC中的方法</h2>
+        <button id="btn">访问OC相册</button>
+        <button id="btn1">调用OC提示窗</button>
+        <p></p>
+    </body>
+    <script>
+       // 这段代码是固定的，必须要放到js中
+       function setupWebViewJavascriptBridge(callback) {
+            if (window.WebViewJavascriptBridge) { return callback(WebViewJavascriptBridge); }
+            if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); }
+            window.WVJBCallbacks = [callback];
+            var WVJBIframe = document.createElement('iframe');
+            WVJBIframe.style.display = 'none';
+            WVJBIframe.src = 'wvjbscheme://__BRIDGE_LOADED__';
+            document.documentElement.appendChild(WVJBIframe);
+            setTimeout(function() { document.documentElement.removeChild(WVJBIframe) }, 0)
+        }
+    
+        // 与OC交互的所有JS方法都要在这里注册,才能让OC和JS之间相互调用
+       setupWebViewJavascriptBridge(function(bridge) {
+
+           /* JS给OC提供公开的API, 在OC中可以手动调用此API, 并且可以接收OC中传过来的参数,同时可回调OC */
+
+           // 获取用户信息
+           bridge.registerHandler('getUserInfo', function(data, responseCallback) {
+               console.log("OC中传递过来的参数:", data);
+               // 把处理好的结果返回给OC
+               responseCallback({"userID":"DX001", "userName":"旋之华", "age":"18", "otherName":"旋之华"})
+           });
+
+           //  弹框输出
+           bridge.registerHandler('alertMessage', function(data, responseCallback) {
+               alert(data);
+           });
+
+           //  动态跳转到京东商城
+           bridge.registerHandler('pushToNewWebSite', function(data, responseCallback) {
+               window.location.href = data.url;
+           });
+
+           bridge.registerHandler('insertImgToWebPage', function(data, responseCallback) {
+
+                var img = document.createElement('img');
+                img.src = data.url;
+                img.width = 200;
+                document.body.appendChild(img);
+
+           });
+
+
+           /* OC给JS提供公开的API, 在JS中可以手动调用此API, 并且可以接收OC中传过来的参数,同时可回调OC */
+                                    
+           // 调用OC中的打开相册方法
+           document.getElementById('btn').onclick = function () {
+               bridge.callHandler('openCamera', {'count':'10张'}, function responseCallback(responseData) {
+                   console.log("OC中返回的参数:", responseData)
+               });
+           };
+
+           document.getElementById('btn1').onclick = function () {
+               bridge.callHandler('showSheet', '', function responseCallback(responseData) {
+                   console.log("OC中返回的参数:", responseData)
+               });
+           };
+       })
+    </script>
+</html>
